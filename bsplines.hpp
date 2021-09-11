@@ -37,7 +37,8 @@ Sofisticated algorithms are based mainly in the book "The NURBS Book" - Piegl, T
 #include <iostream> 
 #include <utility>
 #include <algorithm>
-
+#include <vector>
+#include <cmath>
 #include "macros.h"
 
 using namespace std; 
