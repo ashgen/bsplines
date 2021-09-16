@@ -113,6 +113,7 @@ class bspline_basis{
 		int idx_nonzero(const int &i, const int &j);			/*! collective index for DjBix_nonzero 2D --> 1D */
 		int idx_all(const int &i, const int &j); 			/*! collective index for DjBix 2D --> 1D */
 		void eval_DjBix(const int &i, const double &x);				/*! Evaluates all basis functions and their derivatives at x */
+        void eval_DBix(const int &i, const double &x);				/*! Evaluates all basis functions and their derivatives at x */
 
 
 	public:
@@ -159,6 +160,8 @@ class bspline_basis{
         const arma::vec &get_Bix(const double &x);
         const vector<double> &basis(const double &x);
         const arma::vec &eval(const int &ii, const double &x);
+        const arma::vec &get_DjBix(int j, const double &x);
+        const arma::vec &get_DBix(const double &x);
 };
 
 /*!
@@ -563,7 +566,23 @@ int bspline_basis::idx_all (const int &i, const int &j)
 
 }
 
-// TESTED -  OK      
+void bspline_basis::eval_DBix (const int &ii, const double &x)
+{
+  pair<int,int> i_start_end = make_pair(ii-k+1,ii); // range of indices for nonzero basis Bix.
+
+  // Evaluate all nonzero entries. for this index.
+  eval_nonzero_Djbasis(i_start_end.second, x);
+
+  // Pass entries to temporary vector of dimension nbasis
+  arma::mat temp_DjBix( nderivs + 1,nbasis);
+  temp_DjBix.fill(0.0);
+  for(int i=0; i<=nderivs; ++i)
+    for(int j= i_start_end.first; j <= i_start_end.second; ++j)
+      temp_DjBix(i,j) = DjBix_nonzero[idx_nonzero(i,j-i_start_end.first)];
+
+    DjBix=temp_DjBix.row(1).t();
+}
+// TESTED -  OK
 void bspline_basis::eval_DjBix (const int &ii, const double &x)
 	{
         pair<int,int> i_start_end = make_pair(ii-k+1,ii); // range of indices for nonzero basis Bix. 
@@ -572,10 +591,10 @@ void bspline_basis::eval_DjBix (const int &ii, const double &x)
         eval_nonzero_Djbasis(i_start_end.second, x);
 
         // Pass entries to temporary vector of dimension nbasis 
-        vector<double> temp_DjBix( nbasis * (nderivs+1),0.0);
+        arma::mat temp_DjBix( nderivs + 1,nbasis);
                 for(int i=0; i<=nderivs; ++i)
                         for(int j= i_start_end.first; j <= i_start_end.second; ++j)
-                                temp_DjBix[idx_all(i,j)] = DjBix_nonzero[idx_nonzero(i,j-i_start_end.first)];
+                                temp_DjBix(i,j) = DjBix_nonzero[idx_nonzero(i,j-i_start_end.first)];
 
         //DjBix=std::move(temp_DjBix);
         DjBix=temp_DjBix;
@@ -647,6 +666,7 @@ bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k):  k(
 	eval_DjBix_lim_flag = false; 
     Bix.resize(nbasis);
     Bix_nonzero.resize(k);
+    DjBix.resize(nbasis);
 
 	// Calculate and store Greville:  or not ... ? 
 	greville.resize(nbasis);
@@ -1013,6 +1033,12 @@ double bspline_basis::get_DjBix_lim(int j,int i, const double &x,const char * li
 Returns value d^j B_i(x)/ dx^j. This is a wrapper function for eval_DjBix in order to avoid unnecessary calculations 
 
 */
+const arma::vec &bspline_basis::get_DBix(const double &x){
+  find_knot_span_of_x(x);
+  eval_DBix(i_saved,x);
+  return DjBix;
+
+}
 double bspline_basis::get_DjBix(int j,int i, const double &x)
 	{
 	if (i<0 || i> nbasis){
