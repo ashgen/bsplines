@@ -3,5 +3,4 @@ project(bsplines VERSION 3.1.0)
 set(bsplines_VERSION_MAJOR 3)
 set(bsplines_VERSION_MINOR 0)
 set(CMAKE_CXX_STANDARD 11)
-
 add_executable(bspline_basis examples/bspline_basis.cpp)

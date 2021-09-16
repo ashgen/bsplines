@@ -3,7 +3,7 @@
 #include "../bsplines.hpp"
 #include <iostream>
 using namespace std;
-
+#include "../../armadillo/include/armadillo"
 
 int main(){
 
@@ -14,15 +14,15 @@ int main(){
 	// Define order of b-spline
 	int k=3;
 
-	// Define bspline basis: 
-	bspline_basis mybasis(breakpts,k); 
-    for(int i=0;i < mybasis.get_nbasis();i++){
-      auto t=mybasis.get_Bix(i,0.07);
-      std::cout<<t<<"\t";
+	// Define bspline basis:
+    bspline_basis mybasis(breakpts,k);
+  typedef std::chrono::high_resolution_clock Clock;
+  auto x=arma::randu(1e9);
+  for(int i=0;i<1e9;i++){
+    auto begin = Clock::now();
+    auto t=mybasis.get_Bix(x[i]/100);
+    auto end = Clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() << endl;
 
-    }
-
-
-
-
+  }
 }

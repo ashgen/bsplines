@@ -40,7 +40,8 @@ Sofisticated algorithms are based mainly in the book "The NURBS Book" - Piegl, T
 #include <vector>
 #include <cmath>
 #include "macros.h"
-
+#include <functional>
+#include "../armadillo/include/armadillo"
 using namespace std; 
 
 
@@ -66,11 +67,16 @@ class bspline_basis{
 		bool greville_evaluated; 				/*! Logical operator, informs if Greville abscissa have been evaluated */
 		vector<double> greville; 			/* Contains values of Greville abscissa according to definitions [2] */
 
-		vector<double> Bix_nonzero; 			/*! size: (k,1). Stores  nonzero components of bspline basis */
-		vector<double> Bix; 				/*! size: nbasis Stores  all  components of bspline basis.  Not necessary - remove? */
+		arma::vec Bix_nonzero; 			/*! size: (k,1). Stores  nonzero components of bspline basis */
+		arma::vec Bix; 				/*! size: nbasis Stores  all  components of bspline basis.  Not necessary - remove? */
 		
-		vector<double> DjBix_nonzero; 			/*! size: (nderivs+1,k). Stores  the jth derivative of the ith bspline basis function at x, nonzero terms only */
-		vector<double> DjBix; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
+		arma::vec DjBix_nonzero; 			/*! size: (nderivs+1,k). Stores  the jth derivative of the ith bspline basis function at x, nonzero terms only */
+		arma::vec DjBix; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
+
+        arma::vec Bix_lower; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
+        arma::vec Bix_upper; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
+        arma::vec DBix_lower; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
+        arma::vec DBix_upper; 				/*! Stores  the jth derivative of the ith bspline basis function at x */
 
 
 		// Need custom copy and assignment constructor for this, I think. 
@@ -121,7 +127,7 @@ class bspline_basis{
 		void set_nderivs (const int & new_nderivs);			/*! Sets total number of derivatives to be evaluated. Default nderivs = min(3,k-1) */
 		void set_nintegrals(const int & new_nintegrals); 		/*! Sets total number of Bix integrals. Default = 1 */
 
-		
+
 		int get_nbasis();						/*! Returns number of Bix basis functions */
 		int get_nbreak();						/*! Returns dimension of breakpoints vector. */
 		int get_order();						/*! Returns number of Bix basis functions */
@@ -133,24 +139,26 @@ class bspline_basis{
 
 		void knots_TO_knots_wth_mult();					/*! Pass information from vector<double> to vector<pair<double,int> > */
 		void knots_wth_mult_TO_knots();					/*! Pass information from vector<pair<double,int> > to vector<double> */
-		void set_knots(vector<double> & knots_new);			/*! Update knot vector in vector<double> form  */ 
-		void set_knots(vector<pair<double,int> > & knots_wth_mult_new);	/*! Update knot vector in vector<pair<double,int>> form  */ 
-		
+		void set_knots(vector<double> & knots_new);			/*! Update knot vector in vector<double> form  */
+		void set_knots(vector<pair<double,int> > & knots_wth_mult_new);	/*! Update knot vector in vector<pair<double,int>> form  */
+
 
 
 		/* Experimental */
-		double get_DjBix_lim(const int &j, const int &i, const double &x, const char * lim); 	/*! Value d^j B_i(x)/ dx^j for upper or lower limit.  */
+		double get_DjBix_lim(int j, int i, const double &x, const char * lim); 	/*! Value d^j B_i(x)/ dx^j for upper or lower limit.  */
 
 		/* Evaluation functions */
 		double get_Bix(const int &i, const double &x); 			/*! Value B_i(x) */
-		double get_DjBix(const int &j, const int &i, const double &x); 	/*! Value d^j B_i(x)/ dx^j */
+		double get_DjBix(int j,int i, const double &x); 	/*! Value d^j B_i(x)/ dx^j */
 		void eval_greville();						/*! Evaluates all Greville abscissa according to [2] */
 
 
-		// TO BE ADDED, requires vectors of fixed coefficients to be stored for faster evaluation. 
+		// TO BE ADDED, requires vectors of fixed coefficients to be stored for faster evaluation.
 		double get_IntjBix(const int &j, const int &i, const double &x); /*! Value of j nested integrals \int_0^x B_i(u) du */
 
-
+        const arma::vec &get_Bix(const double &x);
+        const vector<double> &basis(const double &x);
+        const arma::vec &eval(const int &ii, const double &x);
 };
 
 /*!
@@ -341,7 +349,7 @@ void bspline_basis::eval_nonzero_basis(const int &i, const double &x){
 	}
 
 	vector<double> N(k,0.0), left(k,0.0), right(k,0.0);
-	N[0]=1.0; 
+	N[0]=1.0;
 
 	double saved,temp;
 	for(int j=1; j < k; ++j)
@@ -494,18 +502,24 @@ void bspline_basis::eval_nonzero_Djbasis(const int &i, const double &x){
 /*!
 Wrapper function for eval_nonzero_basis. Passes nonzero basis values to vector<double> Bix. 
 */
+const arma::vec&  bspline_basis::eval (const int &ii, const double &x){
+  Bix.fill(0.0);
+  eval_nonzero_basis(ii,x);
+  Bix(arma::span(ii - k + 1,ii)) = Bix_nonzero;
+  return Bix;
+}
 void bspline_basis::eval_Bix (const int &ii, const double &x){
 	
         //pair<int,int> i_start_end = find_nonzero_basis_at_x(x);
         pair<int,int> i_start_end = make_pair(ii-k+1,ii);
         
-	// Evaluate all nonzero entries. for this index. 
+	// Evaluate all nonzero entries. for this index.
         eval_nonzero_basis(i_start_end.second, x);
 
-        // Initialize (to zeros) temporary vector of dimension nbasis 
+        // Initialize (to zeros) temporary vector of dimension nbasis
         vector<double> Bix_temp(nbasis,0.0);
-	        
-        // Pass nonzero entries to temporary vector 
+
+        // Pass nonzero entries to temporary vector
 	for(int j= i_start_end.first; j <= i_start_end.second; ++j)
         	Bix_temp[j] = Bix_nonzero[j-i_start_end.first];
 
@@ -631,7 +645,8 @@ bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k):  k(
 	eval_Bix_flag = false; 	
 	eval_DjBix_flag = false;   
 	eval_DjBix_lim_flag = false; 
-
+    Bix.resize(nbasis);
+    Bix_nonzero.resize(k);
 
 	// Calculate and store Greville:  or not ... ? 
 	greville.resize(nbasis);
@@ -666,7 +681,8 @@ bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k):  k(
 	cerr << "Aborting ..."<<endl;
 	throw 0;
 	}
-
+  Bix_lower= get_Bix(knots[0]);
+  Bix_upper= get_Bix(knots[nbasis - 1]);
 }
 
 
@@ -943,12 +959,18 @@ double bspline_basis::get_Bix(const int &i, const double &x)
 }
 
 
+const arma::vec& bspline_basis::get_Bix(const double &x)
+{
+    auto t=find_knot_span_of_x(x);
+    return eval(t,x);
+}
+
 
 /*! 
 Returns value d^j B_i(x)/ dx^j. This is a wrapper function for eval_DjBix in order to avoid unnecessary calculations 
 
 */
-double bspline_basis::get_DjBix_lim(const int &j, const int &i, const double &x,const char * lim)
+double bspline_basis::get_DjBix_lim(int j,int i, const double &x,const char * lim)
 	{
 
 	if (i<0 || i> nbasis){
@@ -991,7 +1013,7 @@ double bspline_basis::get_DjBix_lim(const int &j, const int &i, const double &x,
 Returns value d^j B_i(x)/ dx^j. This is a wrapper function for eval_DjBix in order to avoid unnecessary calculations 
 
 */
-double bspline_basis::get_DjBix(const int &j, const int &i, const double &x)
+double bspline_basis::get_DjBix(int j,int i, const double &x)
 	{
 	if (i<0 || i> nbasis){
 	DEBUG(i);
