@@ -157,11 +157,12 @@ class bspline_basis{
 		// TO BE ADDED, requires vectors of fixed coefficients to be stored for faster evaluation.
 		double get_IntjBix(const int &j, const int &i, const double &x); /*! Value of j nested integrals \int_0^x B_i(u) du */
 
-        const arma::vec &get_Bix(const double &x);
+        arma::vec get_Bix(const double &x);
         const vector<double> &basis(const double &x);
         const arma::vec &eval(const int &ii, const double &x);
         const arma::vec &get_DjBix(int j, const double &x);
         const arma::vec &get_DBix(const double &x);
+        arma::vec basis_vector(const double &x);
 };
 
 /*!
@@ -702,7 +703,9 @@ bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k):  k(
 	throw 0;
 	}
   Bix_lower= get_Bix(knots[0]);
-  Bix_upper= get_Bix(knots[nbasis - 1]);
+  Bix_upper= get_Bix(knots[nknots - 1]);
+  DBix_lower= get_DBix(knots[0]);
+  DBix_upper= get_DBix(knots[nknots - 1]);
 }
 
 
@@ -979,7 +982,16 @@ double bspline_basis::get_Bix(const int &i, const double &x)
 }
 
 
-const arma::vec& bspline_basis::get_Bix(const double &x)
+arma::vec bspline_basis::basis_vector(const double &x){
+  if(x < knots.front()){
+    return Bix_lower + (x - knots.front())*DBix_lower;
+  }
+  if(x > knots.back()){
+    return Bix_upper + (x - knots.back())*DBix_upper;
+  }
+  return get_Bix(x);
+}
+arma::vec bspline_basis::get_Bix(const double &x)
 {
     auto t=find_knot_span_of_x(x);
     return eval(t,x);
