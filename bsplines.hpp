@@ -157,7 +157,7 @@ class bspline_basis{
 		// TO BE ADDED, requires vectors of fixed coefficients to be stored for faster evaluation.
 		double get_IntjBix(const int &j, const int &i, const double &x); /*! Value of j nested integrals \int_0^x B_i(u) du */
 
-        arma::vec get_Bix(const double &x);
+        const arma::vec &get_Bix(const double &x);
         const vector<double> &basis(const double &x);
         const arma::vec &eval(const int &ii, const double &x);
         const arma::vec &get_DjBix(int j, const double &x);
@@ -991,7 +991,7 @@ arma::vec bspline_basis::basis_vector(const double &x){
   }
   return get_Bix(x);
 }
-arma::vec bspline_basis::get_Bix(const double &x)
+const arma::vec& bspline_basis::get_Bix(const double &x)
 {
     auto t=find_knot_span_of_x(x);
     return eval(t,x);
