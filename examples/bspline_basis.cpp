@@ -15,6 +15,6 @@ int main(){
 	int k=3;
 	// Define bspline basis:
     bspline_basis mybasis(breakpts,k);
-    auto t=mybasis.basis_vector(0.08);
+    auto t=mybasis.basis_vector(-0.04);
     std::cout<<t.t();
 }

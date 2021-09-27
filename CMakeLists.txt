@@ -5,7 +5,6 @@ project(bsplines VERSION 3.1.0)
 find_package(PythonLibs 3.7 REQUIRED)
 find_package(Boost COMPONENTS python REQUIRED)
 
-
 # Without this, any build libraries automatically have names "lib{x}.so"
 set(CMAKE_SHARED_MODULE_PREFIX "")
 
