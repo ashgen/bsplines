@@ -14,7 +14,8 @@ int main(){
 	// Define order of b-spline
 	int k=3;
 	// Define bspline basis:
+	arma::vec test(10,arma::fill::randn);
     bspline_basis mybasis(breakpts,k);
-    auto t=mybasis.basis_vector(-0.04);
+    auto t=mybasis.basis_matrix(test);
     std::cout<<t.t();
 }

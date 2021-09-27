@@ -163,6 +163,7 @@ class bspline_basis{
         const arma::vec &get_DjBix(int j, const double &x);
         const arma::vec &get_DBix(const double &x);
         arma::vec basis_vector(const double &x);
+        arma::mat basis_matrix(const arma::vec &x);
 };
 
 /*!
@@ -981,7 +982,13 @@ double bspline_basis::get_Bix(const int &i, const double &x)
 
 }
 
-
+arma::mat bspline_basis::basis_matrix(const arma::vec& x){
+	arma::mat res(x.size(),nbasis,arma::fill::zeros);
+	for(int i=0;i<x.size();i++){
+		res.row(i)=basis_vector(x[i]).t();
+	}
+	return std::move(res);
+}
 arma::vec bspline_basis::basis_vector(const double &x){
   if(x < knots.front()){
     return Bix_lower + (x - knots.front())*DBix_lower;
