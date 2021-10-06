@@ -3,7 +3,6 @@
 #include "../bsplines.hpp"
 #include <iostream>
 using namespace std;
-#include "../../armadillo/include/armadillo"
 
 int main(){
 
