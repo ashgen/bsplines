@@ -41,7 +41,7 @@ Sofisticated algorithms are based mainly in the book "The NURBS Book" - Piegl, T
 #include <cmath>
 #include "macros.h"
 #include <functional>
-#include "../armadillo/include/armadillo"
+#include "armadillo"
 using namespace std; 
 
 
@@ -229,6 +229,7 @@ int bspline_basis::find_knot_span_of_x_lim(const double &x, const char * lim)
 		i_saved; 
 
 	}
+    return -1;
 }
 
 
@@ -681,7 +682,9 @@ bspline_basis::bspline_basis(const vector<pair<double,int> >&_knots_wth_mult, co
 	throw 0;
 	} 
 
-	bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){ return true; }else if (y <= x){return false;}});
+	bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){ return true; }
+        return false;
+    });
 	if (sorted==false){
 	DEBUG(0.0);
 	cerr<<"breakpoints vector is not strictly increasing,  aborting ..."<<endl;
@@ -1114,7 +1117,11 @@ void bspline_basis::initialize(const vector<double> &_breakpts, const int &_k) {
         throw 0;
     }
 
-    bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){ return true; }else if (y <= x){return false;}});
+    bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){
+        return true;
+    }
+        return false;
+    });
     if (sorted==false){
         DEBUG(0.0);
         cerr<<"breakpoints vector is not strictly increasing,  aborting ..."<<endl;
