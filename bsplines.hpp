@@ -123,6 +123,8 @@ class bspline_basis{
 		bspline_basis(const vector<pair<double,int> > &_knots_wth_mult, const int &_k);
 		/*! Default clamped  knot vector constructor */
 		bspline_basis(const vector<double> &_breakpts, const int &_k);
+
+        void initialize(const vector<double> &_breakpts, const int &_k);
 		//bspline_basis(const vector<double> &_knots, const int &_k);	/*! Need to add this constructor */
 
 		void set_nderivs (const int & new_nderivs);			/*! Sets total number of derivatives to be evaluated. Default nderivs = min(3,k-1) */
@@ -606,107 +608,8 @@ void bspline_basis::eval_DjBix (const int &ii, const double &x)
 Constructs knot vector from a given strictly increasing breakpoints sequence. In this, the multiplicity of first and last knot points 
 is equal to the order k of the bspline, such as, any bspline function (curve), passes from end points. 
 */
-bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k):  k(_k), breakpts(_breakpts){
-
-	
-	// Set default number of nderivs: 
-	nderivs = k-1; 
-	nbreak = breakpts.size();
-
-	// Perform sanity check, that all breakpoint elements are UNIQUE
-	vector<double> temp = _breakpts;
-        auto last = std::unique(temp.begin(),temp.end());
-        temp.erase(last,temp.end());
-
-        if (temp.size() != nbreak )
-		{
-		cerr<< "Gave verctor of NON unique elements in breakpoints, aborting ..." << endl; 
-		DEBUG(temp.size());
-		throw 0;
-		}
-
-
-	
-        knots_wth_mult.resize(nbreak);
-	// Pass values of breakpoints to knots. 
-        for(int i=1; i<nbreak-1; i++)
-        	{
-                knots_wth_mult[i].first=_breakpts[i];
-                knots_wth_mult[i].second=1;
-                }
-
-        // Construct clamped 
-        knots_wth_mult.front().first=_breakpts.front();
-        knots_wth_mult.front().second = k;
-        knots_wth_mult.back().first=_breakpts.back();
-        knots_wth_mult.back().second= k;
-	
-	knots.resize(nbreak+2*(k-1));
-
-	for(int i=0; i<k; ++i){
-		knots[i]=breakpts.front();
-		knots[nbreak+2*(k-1)-1-i] = breakpts.back();
-	}
-	for(int i=0; i<nbreak; ++i)
-		knots[i+k-1]=breakpts[i];
-	nknots=knots.size();
-	nbasis = nknots - k; // Holds for arbirtrary multipliciy. 
-
-	/* Sanity check - passed. 
-	// Total number of multiplicity affected basis.  
-	double tempsum=0.;
-	for(int i=0; i<nbreak; i++)	
-		tempsum += knots_wth_mult[i].second-1.;
-	*/
-
-	// initialize i_saved, x_saved:
-	i_saved = -10;
-	x_saved = NAN;
-	// Initialize flags for matrix evaluation to false. 
-	eval_Bix_flag = false; 	
-	eval_DjBix_flag = false;   
-	eval_DjBix_lim_flag = false; 
-    Bix.resize(nbasis);
-    Bix_nonzero.resize(k);
-    DjBix.resize(nbasis);
-
-	// Calculate and store Greville:  or not ... ? 
-	greville.resize(nbasis);
-	greville_evaluated = false;
-
-
-	// More sanity checks. 
-	if(breakpts[0] ==  breakpts[1] || breakpts[nbreak-2] == breakpts[nbreak-1]){
-	cerr<< "Multiplicity higher than k in first/last knots is not supported, aborting ... "<<endl;
-	cerr<< "Error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: " << __LINE__<<endl;
-	throw 0;
-	} 
-
-
-	if ( knots_wth_mult[0].second != k ){
-	cerr<< "Multiplicity != k in first/last knots is not supported, aborting ... "<<endl;
-	cerr<< "Error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: " << __LINE__<<endl;
-	throw 0;
-	} 
-
-	bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){ return true; }else if (y <= x){return false;}});
-	if (sorted==false){
-	DEBUG(0.0);
-	cerr<<"breakpoints vector is not strictly increasing,  aborting ..."<<endl;
-	throw 0;
-	}
-
-	sorted = std::is_sorted(knots.begin(),knots.end());
-	if (sorted==false){
-	cerr<<"Knot vector is not sorted, error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: ";
-	cerr << __LINE__ <<endl; 
-	cerr << "Aborting ..."<<endl;
-	throw 0;
-	}
-  Bix_lower= get_Bix(knots[0]);
-  Bix_upper= get_Bix(knots[nknots - 1]);
-  DBix_lower= get_DBix(knots[0]);
-  DBix_upper= get_DBix(knots[nknots - 1]);
+bspline_basis::bspline_basis(const vector<double>&_breakpts, const int &_k){
+    initialize(_breakpts, k);
 }
 
 
@@ -1127,9 +1030,109 @@ vector<double>  bspline_basis::get_abscissa()
 	}
 }
 
+void bspline_basis::initialize(const vector<double> &_breakpts, const int &_k) {
+    breakpts=_breakpts;
+    k=_k;
+
+    // Set default number of nderivs:
+    nderivs = k-1;
+    nbreak = breakpts.size();
+
+    // Perform sanity check, that all breakpoint elements are UNIQUE
+    vector<double> temp = _breakpts;
+    auto last = std::unique(temp.begin(),temp.end());
+    temp.erase(last,temp.end());
+
+    if (temp.size() != nbreak )
+    {
+        cerr<< "Gave verctor of NON unique elements in breakpoints, aborting ..." << endl;
+        DEBUG(temp.size());
+        throw 0;
+    }
 
 
 
+    knots_wth_mult.resize(nbreak);
+    // Pass values of breakpoints to knots.
+    for(int i=1; i<nbreak-1; i++)
+    {
+        knots_wth_mult[i].first=_breakpts[i];
+        knots_wth_mult[i].second=1;
+    }
+
+    // Construct clamped
+    knots_wth_mult.front().first=_breakpts.front();
+    knots_wth_mult.front().second = k;
+    knots_wth_mult.back().first=_breakpts.back();
+    knots_wth_mult.back().second= k;
+
+    knots.resize(nbreak+2*(k-1));
+
+    for(int i=0; i<k; ++i){
+        knots[i]=breakpts.front();
+        knots[nbreak+2*(k-1)-1-i] = breakpts.back();
+    }
+    for(int i=0; i<nbreak; ++i)
+        knots[i+k-1]=breakpts[i];
+    nknots=knots.size();
+    nbasis = nknots - k; // Holds for arbirtrary multipliciy.
+
+    /* Sanity check - passed.
+    // Total number of multiplicity affected basis.
+    double tempsum=0.;
+    for(int i=0; i<nbreak; i++)
+        tempsum += knots_wth_mult[i].second-1.;
+    */
+
+    // initialize i_saved, x_saved:
+    i_saved = -10;
+    x_saved = NAN;
+    // Initialize flags for matrix evaluation to false.
+    eval_Bix_flag = false;
+    eval_DjBix_flag = false;
+    eval_DjBix_lim_flag = false;
+    Bix.resize(nbasis);
+    Bix_nonzero.resize(k);
+    DjBix.resize(nbasis);
+
+    // Calculate and store Greville:  or not ... ?
+    greville.resize(nbasis);
+    greville_evaluated = false;
+
+
+    // More sanity checks.
+    if(breakpts[0] ==  breakpts[1] || breakpts[nbreak-2] == breakpts[nbreak-1]){
+        cerr<< "Multiplicity higher than k in first/last knots is not supported, aborting ... "<<endl;
+        cerr<< "Error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: " << __LINE__<<endl;
+        throw 0;
+    }
+
+
+    if ( knots_wth_mult[0].second != k ){
+        cerr<< "Multiplicity != k in first/last knots is not supported, aborting ... "<<endl;
+        cerr<< "Error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: " << __LINE__<<endl;
+        throw 0;
+    }
+
+    bool sorted = is_sorted(breakpts.begin(),breakpts.end(), [](double &x, double &y) { if (x < y){ return true; }else if (y <= x){return false;}});
+    if (sorted==false){
+        DEBUG(0.0);
+        cerr<<"breakpoints vector is not strictly increasing,  aborting ..."<<endl;
+        throw 0;
+    }
+
+    sorted = std::is_sorted(knots.begin(),knots.end());
+    if (sorted==false){
+        cerr<<"Knot vector is not sorted, error in function: " << __PRETTY_FUNCTION__ << ", in file: " << __FILE__ << " -- line number: ";
+        cerr << __LINE__ <<endl;
+        cerr << "Aborting ..."<<endl;
+        throw 0;
+    }
+    Bix_lower= get_Bix(knots[0]);
+    Bix_upper= get_Bix(knots[nknots - 1]);
+    DBix_lower= get_DBix(knots[0]);
+    DBix_upper= get_DBix(knots[nknots - 1]);
+}
 
 
 #endif
