@@ -13,8 +13,17 @@ int main(){
 	// Define order of b-spline
 	int k=3;
 	// Define bspline basis:
-	arma::vec test(10,arma::fill::randn);
+    int N=1000000;
+	arma::vec test(N,arma::fill::randn);
     bspline_basis mybasis(breakpts,k);
-    auto t=mybasis.basis_matrix(test);
-    std::cout<<t.t();
+    arma::vec coefs(10,arma::fill::randn);
+    for(int i=0;i<N;i++){
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto t=arma::dot(mybasis.basis_vector(test[i]),coefs);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto elapsed_seconds=std::chrono::duration_cast<std::chrono::nanoseconds>(
+                end - start);
+        std::cout<<elapsed_seconds.count()<<std::endl;
+    }
 }
