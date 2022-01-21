@@ -14,6 +14,7 @@ int main(){
 	int k=3;
 	// Define bspline basis:
     int N=1000000;
+    std::cout<<"func,lat"<< std::endl;
 	arma::vec test(N,arma::fill::randn);
     bspline_basis mybasis(breakpts,k);
     arma::vec coefs(10,arma::fill::randn);
@@ -24,6 +25,6 @@ int main(){
         auto end = std::chrono::high_resolution_clock::now();
         auto elapsed_seconds=std::chrono::duration_cast<std::chrono::nanoseconds>(
                 end - start);
-        std::cout<<elapsed_seconds.count()<<std::endl;
+        std::cout<<"whole,"<<elapsed_seconds.count()<<std::endl;
     }
 }
