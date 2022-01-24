@@ -21,7 +21,9 @@ int main(){
     arma::vec coefs(10,arma::fill::randn);
   auto start = std::chrono::high_resolution_clock::now();
   for(int i=0;i<N;i++){
+        auto x = std::chrono::high_resolution_clock::now();
         auto t=arma::dot(mybasis.basis_vector(test[i]),coefs);
+         x = std::chrono::high_resolution_clock::now();
   }
   auto end = std::chrono::high_resolution_clock::now();
   auto elapsed_seconds=std::chrono::duration_cast<std::chrono::nanoseconds>(
