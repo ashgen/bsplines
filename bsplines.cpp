@@ -205,7 +205,7 @@ void bspline_basis::eval_nonzero_basis(const int &i, const double &x){
 		N[j]=saved;
 		}
 	// Move the value to the class member Bix_nonzero
-	Bix_nonzero=std::move(N);
+	Bix_nonzero=N;
 
 }
 
@@ -333,7 +333,7 @@ void bspline_basis::eval_nonzero_Djbasis(const int &i, const double &x){
 			r *= ((k-1)-m);
 			}
 			
-	DjBix_nonzero = std::move(ders);
+	DjBix_nonzero = ders;
 
 }		
 
@@ -363,7 +363,7 @@ void bspline_basis::eval_Bix (const int &ii, const double &x){
         	Bix_temp[j] = Bix_nonzero[j-i_start_end.first];
 
 	// move temporary vector to Bix
-	Bix=std::move(Bix_temp);
+	Bix=Bix_temp;
 }
 
 
@@ -724,7 +724,7 @@ arma::mat bspline_basis::basis_matrix(const arma::vec& x){
 	for(int i=0;i<x.size();i++){
 		res.row(i)=basis_vector(x[i]).t();
 	}
-	return std::move(res);
+	return res;
 }
 arma::vec bspline_basis::basis_vector(const double &x){
   if(x < knots.front()){
